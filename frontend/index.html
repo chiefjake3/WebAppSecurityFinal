@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver and Vehicle Registry</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1>Driver and Vehicle Registry</h1>
+    </header>
+    <main>
+        <section id="login">
+            <h2>Login</h2>
+            <form id="loginForm">
+                <input type="text" id="username" placeholder="Username" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+        </section>
+        <section id="dashboard" style="display: none;">
+            <h2>Dashboard</h2>
+            <div id="userInfo"></div>
+            <button id="logoutBtn">Logout</button>
+            <div id="adminPanel" style="display: none;">
+                <h3>Admin Panel</h3>
+                <form id="carSearchForm">
+                    <input type="text" id="searchVin" placeholder="VIN">
+                    <button type="submit">Search Car</button>
+                </form>
+                <div id="carSearchResult"></div>
+            </div>
+        </section>
+        <section id="registerDriver" style="display: none;">
+            <h2>Register New Driver</h2>
+            <form id="driverForm">
+                <input type="text" id="driverName" placeholder="Name" required>
+                <input type="text" id="licenseNumber" placeholder="License Number" required>
+                <input type="text" id="state" placeholder="State" required>
+                <input type="text" id="address" placeholder="Address" required>
+                <button type="submit">Register Driver</button>
+            </form>
+        </section>
+        <section id="registerCar" style="display: none;">
+            <h2>Register New Car</h2>
+            <form id="carForm">
+                <input type="text" id="vin" placeholder="VIN" required>
+                <input type="text" id="make" placeholder="Make" required>
+                <input type="text" id="model" placeholder="Model" required>
+                <input type="number" id="year" placeholder="Year" required>
+                <input type="text" id="color" placeholder="Color" required>
+                <input type="text" id="ownerLicenseNumber" placeholder="Owner's License Number" required>
+                <button type="submit">Register Car</button>
+            </form>
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
