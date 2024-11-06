@@ -9,6 +9,7 @@ services:
     volumes:
       - ./index.html:/usr/share/nginx/html/index.html
       - ./userHomePage.html:/usr/share/nginx/html/userHomePage.html
+      - ./adminHomePage.html:/usr/share/nginx/html/adminHomePage.html
       - ./newDriverForm.html:/usr/share/nginx/html/newDriverForm.html
       - ./registerCarForm.html:/usr/share/nginx/html/registerCarForm.html
       - ./nginx.conf:/etc/nginx/nginx.conf  # Use custom configuration
