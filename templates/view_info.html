@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Info</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .info-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+        h2 {
+            text-align: center;
+        }
+        p {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="info-container">
+    <h2>Your Information</h2>
+
+    <!-- Display user info -->
+    {% if driver %}
+      <p><strong>Name:</strong> {{ driver.name }}</p>
+      <p><strong>License Number:</strong> {{ driver.license_number }}</p>
+      <p><strong>Address:</strong> {{ driver.address }}</p>
+
+      <!-- Display cars owned by user -->
+      {% if cars %}
+          <h3>Your Cars:</h3>
+
+          {% for car in cars %}
+              <p><strong>VIN:</strong> {{ car.vin }}</p>
+              <p><strong>Make:</strong> {{ car.make }}</p>
+              <p><strong>Model:</strong> {{ car.model }}</p>
+              <p><strong>Year:</strong> {{ car.year }}</p>
+              <hr/>
+          {% endfor %}
+      {% else %}
+          <p>You have no registered cars.</p>
+      {% endif %}
+      
+    {% else %}
+      <p>No driver information found.</p>
+    {% endif %}
+    
+</div>
+
+</body>
+</html>
