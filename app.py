@@ -28,9 +28,16 @@ def setup_database():
             is_employee BOOLEAN DEFAULT FALSE
         );
     ''')
-    cursor.execute('''CREATE TABLE IF NOT EXISTS drivers
-                 (license_number TEXT PRIMARY KEY, state TEXT, address TEXT, name TEXT, username TEXT,
-                 FOREIGN KEY (username) REFERENCES users(username))''')
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS drivers (
+        license_number TEXT PRIMARY KEY,
+        state TEXT,
+        address TEXT,
+        name TEXT,
+        username TEXT,
+        FOREIGN KEY (username) REFERENCES users(username)
+    )
+    ''')
 
     cursor.execute('''CREATE TABLE IF NOT EXISTS cars
                  (vin TEXT PRIMARY KEY, make TEXT, model TEXT, year INTEGER, color TEXT, owner_license TEXT,
@@ -107,29 +114,24 @@ def logout():
 def upload_driver_info():
     if 'user' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-
+    
     license_number = request.form['licenseNumber']
     state = request.form['state']
     address = request.form['address']
     name = request.form['name']
-
+    username = session['user']
+    
     db = get_db()
-
     try:
         # Insert new driver into the drivers table
-        db.execute('INSERT INTO drivers (license_number, state, address, name, username) VALUES (?, ?, ?, ?, ?)',
-                   (license_number, state, address, name, session['user']))
-        
+        db.execute('INSERT INTO drivers (license_number, state, address, name, username) VALUES (?, ?, ?, ?, ?)', 
+                   (license_number, state, address, name, username))
         db.commit()
-        
         flash("Driver info uploaded successfully!", "success")
-    
     except sqlite3.IntegrityError:
         flash("Driver info already exists!", "error")
-    
     finally:
         db.close()
-
     return redirect(url_for('user_dashboard'))
 
 @app.route('/create_account', methods=['GET', 'POST'])
@@ -168,51 +170,49 @@ def handle_csrf_error(e):
 def register_car():
     if 'user' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-
+    
     vin = request.form['vin']
     make = request.form['make']
     model = request.form['model']
     year = request.form['year']
     color = request.form['color']
-    owner_name = request.form['ownerName']
-    owner_license = request.form['ownerLicense']
-
-    db = get_db()
-
-    try:
-        # Insert new car into the cars table
-        db.execute('INSERT INTO cars (vin, make, model, year, color, owner_license) VALUES (?, ?, ?, ?, ?, ?)',
-                   (vin, make, model, year, color, owner_license))
-        
-        db.commit()
-        
-        flash("Car registered successfully!", "success")
     
+    db = get_db()
+    try:
+        # Get the driver's license number for the current user
+        driver = db.execute('SELECT license_number FROM drivers WHERE username = ?', (session['user'],)).fetchone()
+        if not driver:
+            flash("Please upload your driver information first!", "error")
+            return redirect(url_for('user_dashboard'))
+        
+        owner_license = driver['license_number']
+        
+        # Insert new car into the cars table
+        db.execute('INSERT INTO cars (vin, make, model, year, color, owner_license) VALUES (?, ?, ?, ?, ?, ?)', 
+                   (vin, make, model, year, color, owner_license))
+        db.commit()
+        flash("Car registered successfully!", "success")
     except sqlite3.IntegrityError:
         flash("Car with this VIN already exists!", "error")
-    
     finally:
         db.close()
-
     return redirect(url_for('user_dashboard'))
 
 @app.route('/view_info')
 def view_info():
     if 'user' not in session:
         return jsonify({"error": "Unauthorized"}), 401
-
+    
     db = get_db()
-
     driver = db.execute('SELECT * FROM drivers WHERE username = ?', (session['user'],)).fetchone()
-
+    
     if not driver:
         db.close()
         return render_template('view_info.html', driver=None, cars=[])
-
+    
     cars = db.execute('SELECT * FROM cars WHERE owner_license = ?', (driver['license_number'],)).fetchall()
-
     db.close()
-
+    
     return render_template('view_info.html', driver=driver, cars=cars)
 
 @app.route('/transfer_car_info', methods=['POST'])
