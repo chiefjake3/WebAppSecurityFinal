@@ -52,7 +52,8 @@
     <div class="container">
         <h1>Admin Dashboard - Car Registration</h1>
         
-        <form action="/search" method="get">
+        <form action="{{ url_for('employee_search') }}" method="POST">
+
             <h3>Search Registered Drivers</h3>
             <div class="form-group">
                 <label for="driver-license">Driver License Number</label>
@@ -89,7 +90,10 @@
                 <input type="text" id="color" name="color" placeholder="Enter Vehicle Color">
             </div>
 
-            <button type="submit" class="submit-btn">Search</button>
+
+             <button type="submit" class="submit-btn">Search</button>
+          
+
         </form>
     </div>
 

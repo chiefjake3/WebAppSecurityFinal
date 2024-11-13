@@ -1,6 +1,8 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, g
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+import logging
+from logging import Formatter, FileHandler
 import secrets
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
@@ -14,7 +16,11 @@ def get_db():
     db = sqlite3.connect('driver_car_system.db')
     db.row_factory = sqlite3.Row
     return db
-
+@app.teardown_appcontext
+def close_db(exception):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
 def setup_database():
     conn = sqlite3.connect('driver_car_system.db')
     cursor = conn.cursor()
@@ -40,8 +46,8 @@ def setup_database():
     ''')
 
     cursor.execute('''CREATE TABLE IF NOT EXISTS cars
-                 (vin TEXT PRIMARY KEY, make TEXT, model TEXT, year INTEGER, color TEXT, license_number TEXT,
-                 FOREIGN KEY (license_number) REFERENCES drivers(license_number))''')
+                 (vin TEXT PRIMARY KEY, make TEXT, model TEXT, year INTEGER, color TEXT, owner_license TEXT,
+                 FOREIGN KEY (owner_license) REFERENCES drivers(license_number))''')
     
     conn.commit()
     conn.close()
@@ -85,6 +91,15 @@ def employee_dashboard():
         return redirect(url_for('login'))
     
     return render_template('employee_dashboard.html', username=session['user'])
+
+@app.route('/employee_search')
+def employee_search():
+    if 'user' not in session or not session.get('is_employee'):
+        return redirect(url_for('login'))
+    
+    
+    return render_template('employee_search.html', username=session['user'])
+
 
 @app.route('/upload_driver_info_page')
 def upload_driver_info_page():
@@ -171,11 +186,11 @@ def register_car():
     if 'user' not in session:
         return jsonify({"error": "Unauthorized"}), 401
     
-    vin = request.form['vin']
-    make = request.form['make']
-    model = request.form['model']
-    year = request.form['year']
-    color = request.form['color']
+    vin = request.form.get('vin')
+    make = request.form.get('make')
+    model = request.form.get('model')
+    year = request.form.get('year')
+    color = request.form.get('color')
     
     db = get_db()
     try:
@@ -185,11 +200,12 @@ def register_car():
             flash("Please upload your driver information first!", "error")
             return redirect(url_for('user_dashboard'))
         
-        license_number = driver['license_number']
+        owner_license = driver['license_number']
         
         # Insert new car into the cars table
-        db.execute('INSERT INTO cars (vin, make, model, year, color, license_number) VALUES (?, ?, ?, ?, ?, ?)', 
-                   (vin, make, model, year, color, license_number))
+        db.execute('INSERT INTO cars (vin, make, model, year, color, owner_license) VALUES (?, ?, ?, ?, ?, ?)', 
+                   (vin, make, model, year, color, owner_license))
+    #wait(2) something needs to go here for the db lock
         db.commit()
         flash("Car registered successfully!", "success")
     except sqlite3.IntegrityError:
@@ -208,20 +224,19 @@ def view_info():
     
     if not driver:
         db.close()
-        return jsonify({"driver": None, "cars": []})
-    
-    cars = db.execute('SELECT * FROM cars WHERE license_number = ?', (driver['license_number'],)).fetchall()
+        return jsonify('view_info.html', driver=None, cars=[])
+        #return render_template('view_info.html', driver=None, cars=[])
+
+    cars = db.execute('SELECT * FROM cars WHERE owner_license = ?', (driver['license_number'],)).fetchall()
     db.close()
     
+    #return render_template('view_info.html', driver=driver, cars=cars)
     return jsonify({
-        "driver": {
-            "name": driver['name'],
-            "license_number": driver['license_number'],
-            "address": driver['address']
-        },
-        "cars": [{"vin": car['vin'], "make": car['make'], "model": car['model'], "year": car['year']} for car in cars]
+        'name': driver['name'], 
+        'license_number': driver['license_number'], 
+        'address': driver['address'], 
+        'cars': [dict(car) for car in cars]
     })
-
 
 @app.route('/transfer_car_info', methods=['POST'])
 def transfer_car_info():
@@ -235,7 +250,7 @@ def transfer_car_info():
 
      try:
          # Update the owner of the car in the cars table
-         db.execute('UPDATE cars SET license_number = ? WHERE vin = ?', (new_owner_license, vin))
+         db.execute('UPDATE cars SET owner_license = ? WHERE vin = ?', (new_owner_license, vin))
          db.commit()
          flash("Car ownership transferred successfully!", "success")
      except sqlite3.Error as e:
@@ -265,3 +280,28 @@ def employee_query():
 if __name__ == '__main__':
     setup_database()
     app.run(debug=True)
+
+
+@app.route('/employee_search', methods=['GET'])
+def employee_search():
+    if 'user' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    db = get_db()
+    driver = db.execute('SELECT * FROM drivers WHERE username = ?', (session['user'],)).fetchone()
+    
+    if not driver:
+        db.close()
+        return jsonify('employee_search.html', driver=None, cars=[])
+        #return render_template('employee_search.html', driver=None, cars=[])
+
+    cars = db.execute('SELECT * FROM cars WHERE owner_license = ?', (driver['license_number'],)).fetchall()
+    db.close()
+    
+    #return render_template('view_info.html', driver=driver, cars=cars)
+    return jsonify({
+        'name': driver['name'], 
+        'license_number': driver['license_number'], 
+        'address': driver['address'], 
+        'cars': [dict(car) for car in cars]
+    })

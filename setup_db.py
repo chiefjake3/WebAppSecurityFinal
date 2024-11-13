@@ -12,8 +12,8 @@ def setup_database():
                  FOREIGN KEY (username) REFERENCES users(username))''')
 
     c.execute('''CREATE TABLE IF NOT EXISTS cars
-                 (vin TEXT PRIMARY KEY, make TEXT, model TEXT, year INTEGER, color TEXT, license_number TEXT,
-                 FOREIGN KEY (license_number) REFERENCES drivers(license_number))''')
+                 (vin TEXT PRIMARY KEY, make TEXT, model TEXT, year INTEGER, color TEXT, owner_license TEXT,
+                 FOREIGN KEY (owner_license) REFERENCES drivers(license_number))''')
 
     conn.commit()
     conn.close()
