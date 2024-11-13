@@ -92,6 +92,81 @@ def employee_dashboard():
     
     return render_template('employee_dashboard.html', username=session['user'])
 
+@app.route('/employee_search', methods=['GET', 'POST'])
+def employee_search():
+    if 'user' not in session or not session.get('is_employee'):
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        # Retrieve the form data from the POST request
+        driver_license = request.form.get('driver_license', '')
+        state = request.form.get('state', '')
+        address = request.form.get('address', '')
+        name = request.form.get('name', '')
+        
+        vin = request.form.get('vin', '')
+        make = request.form.get('make', '')
+        model = request.form.get('model', '')
+        color = request.form.get('color', '')
+
+        # Construct the query and parameters
+        query = "SELECT * FROM drivers WHERE 1=1"
+        params = []
+        
+        if driver_license:
+            query += " AND license_number LIKE ?"
+            params.append(f"%{driver_license}%")
+        if state:
+            query += " AND state LIKE ?"
+            params.append(f"%{state}%")
+        if name:
+            query += " AND name LIKE ?"
+            params.append(f"%{name}%")
+        if address:
+            query += " AND address LIKE ?"
+            params.append(f"%{address}%")
+
+        # For searching cars:
+        if vin:
+            query += " AND vin LIKE ?"
+            params.append(f"%{vin}%")
+        if make:
+            query += " AND make LIKE ?"
+            params.append(f"%{make}%")
+        if model:
+            query += " AND model LIKE ?"
+            params.append(f"%{model}%")
+        if color:
+            query += " AND color LIKE ?"
+            params.append(f"%{color}%")
+
+        db = get_db()
+        cursor = db.cursor()
+        cursor.execute(query, params)
+        
+        # Fetch matching results
+        driver_results = cursor.fetchall()
+        
+        # If driver search results found, fetch the cars related to those drivers
+        cars = []
+        if driver_results:
+            for driver in driver_results:
+                driver_license_number = driver['license_number']
+                car_query = 'SELECT * FROM cars WHERE owner_license = ?'
+                cursor.execute(car_query, (driver_license_number,))
+                car_results = cursor.fetchall()
+                cars.append({ 'driver': driver, 'cars': car_results })
+
+        db.close()
+        
+        # Return the results to the template for display
+        return render_template('employee_search.html', username=session['user'], drivers=cars)
+
+    return render_template('employee_search.html', username=session['user'])
+
+
+
+
 @app.route('/upload_driver_info_page')
 def upload_driver_info_page():
      return render_template('upload_driver_info_page.html')
@@ -273,3 +348,61 @@ if __name__ == '__main__':
     app.run(debug=True)
 
 
+@app.route('/employee_search', methods=['GET'])
+def employee_search():
+    if 'user' not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    db = get_db()
+    driver = db.execute('SELECT * FROM drivers WHERE username = ?', (session['user'],)).fetchone()
+    
+    if not driver:
+        db.close()
+        return jsonify('employee_search.html', driver=None, cars=[])
+        #return render_template('employee_search.html', driver=None, cars=[])
+
+    cars = db.execute('SELECT * FROM cars WHERE owner_license = ?', (driver['license_number'],)).fetchall()
+    db.close()
+    
+    #return render_template('view_info.html', driver=driver, cars=cars)
+    return jsonify({
+        'name': driver['name'], 
+        'license_number': driver['license_number'], 
+        'address': driver['address'], 
+        'cars': [dict(car) for car in cars]
+    })
+
+
+@app.route('/search', methods=['GET'])
+def search():
+    # Get search parameters from the query string
+    license_number = request.args.get('license_number', '')
+    state = request.args.get('state', '')
+    name = request.args.get('name', '')
+    vin = request.args.get('vin', '')
+
+    # Construct the SQL query based on the search parameters
+    query = "SELECT * FROM drivers WHERE 1=1"
+    params = []
+
+    if license_number:
+        query += " AND license_number LIKE ?"
+        params.append(f"%{license_number}%")
+    if state:
+        query += " AND state LIKE ?"
+        params.append(f"%{state}%")
+    if name:
+        query += " AND name LIKE ?"
+        params.append(f"%{name}%")
+    if vin:
+        query += " AND vin LIKE ?"
+        params.append(f"%{vin}%")
+
+    # Execute the query and fetch results
+    cursor = db.execute(query, params)
+    results = cursor.fetchall()
+
+    # Convert results to a list of dictionaries (assuming SQLite)
+    drivers = [{'license_number': row[0], 'state': row[1], 'name': row[2], 'vin': row[3]} for row in results]
+
+    return jsonify(drivers)

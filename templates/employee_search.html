@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Search - Car Registration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            box-sizing: border-box;
+        }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .submit-btn:hover {
+            background-color: #45a049;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Search Results</h1>
+
+        <h3>Drivers and Their Cars</h3>
+        {% if drivers %}
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Driver Name</th>
+                        <th>License Number</th>
+                        <th>Address</th>
+                        <th>Cars</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in drivers %}
+                        <tr>
+                            <td>{{ entry['driver']['name'] }}</td>
+                            <td>{{ entry['driver']['license_number'] }}</td>
+                            <td>{{ entry['driver']['address'] }}</td>
+                            <td>
+                                <ul>
+                                    {% for car in entry['cars'] %}
+                                        <li>{{ car['make'] }} - {{ car['model'] }} ({{ car['color'] }})</li>
+                                    {% endfor %}
+                                </ul>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No results found.</p>
+        {% endif %}
+    </div>
+
+</body>
+</html>
