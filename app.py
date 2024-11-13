@@ -92,13 +92,16 @@ def employee_dashboard():
     
     return render_template('employee_dashboard.html', username=session['user'])
 
-@app.route('/employee_search')
+@app.route('/employee_search', methods=['GET', 'POST'])
 def employee_search():
     if 'user' not in session or not session.get('is_employee'):
         return redirect(url_for('login'))
     
-    
-    return render_template('employee_search.html', username=session['user'])
+    if request.method == 'POST':
+        # Handle form data or search processing here
+
+        return render_template('employee_search.html', username=session['user'])
+
 
 
 @app.route('/upload_driver_info_page')
