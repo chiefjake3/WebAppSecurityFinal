@@ -1,6 +1,8 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, g
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
+import logging
+from logging import Formatter, FileHandler
 import secrets
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
@@ -14,7 +16,11 @@ def get_db():
     db = sqlite3.connect('driver_car_system.db')
     db.row_factory = sqlite3.Row
     return db
-
+@app.teardown_appcontext
+def close_db(exception):
+    db = g.pop('db', None)
+    if db is not None:
+        db.close()
 def setup_database():
     conn = sqlite3.connect('driver_car_system.db')
     cursor = conn.cursor()
@@ -171,16 +177,17 @@ def register_car():
     if 'user' not in session:
         return jsonify({"error": "Unauthorized"}), 401
     
-    vin = request.form['vin']
-    make = request.form['make']
-    model = request.form['model']
-    year = request.form['year']
-    color = request.form['color']
+    vin = request.form.get('vin')
+    make = request.form.get('make')
+    model = request.form.get('model')
+    year = request.form.get('year')
+    color = request.form.get('color')
     
-    db = get_db()
-    try:
+    #db = get_db()
+    with get_db() as db:
         # Get the driver's license number for the current user
         driver = db.execute('SELECT license_number FROM drivers WHERE username = ?', (session['user'],)).fetchone()
+        db.commit()
         if not driver:
             flash("Please upload your driver information first!", "error")
             return redirect(url_for('user_dashboard'))
@@ -191,14 +198,12 @@ def register_car():
         db.execute('INSERT INTO cars (vin, make, model, year, color, owner_license) VALUES (?, ?, ?, ?, ?, ?)', 
                    (vin, make, model, year, color, owner_license))
         db.commit()
+
         flash("Car registered successfully!", "success")
-    except sqlite3.IntegrityError:
-        flash("Car with this VIN already exists!", "error")
-    finally:
-        db.close()
+
     return redirect(url_for('user_dashboard'))
 
-@app.route('/view_info')
+@app.route('/view_info', methods=['GET'])
 def view_info():
     if 'user' not in session:
         return jsonify({"error": "Unauthorized"}), 401
@@ -208,12 +213,19 @@ def view_info():
     
     if not driver:
         db.close()
-        return render_template('view_info.html', driver=None, cars=[])
-    
+        return jsonify('view_info.html', driver=None, cars=[])
+        #return render_template('view_info.html', driver=None, cars=[])
+
     cars = db.execute('SELECT * FROM cars WHERE owner_license = ?', (driver['license_number'],)).fetchall()
     db.close()
     
-    return render_template('view_info.html', driver=driver, cars=cars)
+    #return render_template('view_info.html', driver=driver, cars=cars)
+    return jsonify({
+        'name': driver['name'], 
+        'license_number': driver['license_number'], 
+        'address': driver['address'], 
+        'cars': [dict(car) for car in cars]
+    })
 
 @app.route('/transfer_car_info', methods=['POST'])
 def transfer_car_info():
@@ -257,3 +269,5 @@ def employee_query():
 if __name__ == '__main__':
     setup_database()
     app.run(debug=True)
+
+

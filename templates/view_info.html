@@ -33,14 +33,14 @@
 
 <div class="info-container">
     <h2>Your Information</h2>
-
-    <!-- Display user info -->
+    <div id="info"></div>
+    <!-- Display user info 
     {% if driver %}
       <p><strong>Name:</strong> {{ driver.name }}</p>
       <p><strong>License Number:</strong> {{ driver.license_number }}</p>
       <p><strong>Address:</strong> {{ driver.address }}</p>
 
-      <!-- Display cars owned by user -->
+      Display cars owned by user 
       {% if cars %}
           <h3>Your Cars:</h3>
 
@@ -58,8 +58,14 @@
     {% else %}
       <p>No driver information found.</p>
     {% endif %}
-    
+    -->
 </div>
-
+<script src="static/user.js"></script>
+<script>
+    // Run the viewInfo function when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        viewInfo(); // Call the viewInfo function to fetch and display the data
+    });
+</script>
 </body>
 </html>

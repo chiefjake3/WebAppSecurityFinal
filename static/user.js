@@ -55,8 +55,18 @@ async function registerCar(e) {
 async function viewInfo() {
     const response = await fetch('/view_info');
     const data = await response.json();
-    document.getElementById('info-container').innerHTML = `
-        <h2>User Information</h2>
+
+    if (data.error)
+    {
+        alert(data.error);
+    }
+    else 
+    {
+        console.log(data)
+        console.log("data is shown")
+        //document.getElementById('info-container').innerHTML = `
+        const infoContainer = document.querySelector('#info');
+        infoContainer.innerHTML = `
         <p>Name: ${data.name}</p>
         <p>License Number: ${data.license_number}</p>
         <p>Address: ${data.address}</p>
@@ -64,5 +74,8 @@ async function viewInfo() {
         <ul>
             ${data.cars.map(car => `<li>${car.year} ${car.make} ${car.model} (VIN: ${car.vin})</li>`).join('')}
         </ul>
-    `;
+        `;
+        console.log("we are done here");
+    }
+   
 }
