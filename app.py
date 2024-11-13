@@ -183,11 +183,10 @@ def register_car():
     year = request.form.get('year')
     color = request.form.get('color')
     
-    #db = get_db()
-    with get_db() as db:
+    db = get_db()
+    try:
         # Get the driver's license number for the current user
         driver = db.execute('SELECT license_number FROM drivers WHERE username = ?', (session['user'],)).fetchone()
-        db.commit()
         if not driver:
             flash("Please upload your driver information first!", "error")
             return redirect(url_for('user_dashboard'))
@@ -197,10 +196,13 @@ def register_car():
         # Insert new car into the cars table
         db.execute('INSERT INTO cars (vin, make, model, year, color, owner_license) VALUES (?, ?, ?, ?, ?, ?)', 
                    (vin, make, model, year, color, owner_license))
+    #wait(2) something needs to go here for the db lock
         db.commit()
-
         flash("Car registered successfully!", "success")
-
+    except sqlite3.IntegrityError:
+        flash("Car with this VIN already exists!", "error")
+    finally:
+        db.close()
     return redirect(url_for('user_dashboard'))
 
 @app.route('/view_info', methods=['GET'])
