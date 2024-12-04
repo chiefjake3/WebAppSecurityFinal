@@ -92,7 +92,7 @@ def employee_dashboard():
     
     return render_template('employee_dashboard.html', username=session['user'])
 
-@app.route('/employee_search', methods=['GET', 'POST'])
+@app.route('/employee_search', methods=['POST'])
 def employee_search():
     if 'user' not in session or not session.get('is_employee'):
         return redirect(url_for('login'))
